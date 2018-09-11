@@ -2631,6 +2631,22 @@ describe('mongodb connector', function() {
     });
   });
 
+  it('should allow to find using case insensitive index via filter', function(done) {
+    Category.create({title: 'My Category'}, function(err, category1) {
+      should.not.exist(err);
+      Category.create({title: 'MY CATEGORY'}, function(err, category2) {
+        should.not.exist(err);
+
+        Category.find({where: {title: 'my cATEGory'}, collation: {locale: 'en', strength: 1}},
+          function(err, categories) {
+            should.not.exist(err);
+            categories.should.have.length(2);
+            done();
+          });
+      });
+    });
+  });
+
   it('should allow to find using like', function(done) {
     Post.create({title: 'My Post', content: 'Hello'}, function(err, post) {
       Post.find({where: {title: {like: 'M.+st'}}}, function(err, posts) {

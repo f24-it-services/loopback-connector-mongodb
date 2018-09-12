@@ -12,6 +12,7 @@ var testUtils = require('../lib/test-utils');
 var async = require('async');
 var sinon = require('sinon');
 var sanitizeFilter = require('../lib/mongodb').sanitizeFilter;
+var sanitizeCollation = require('../lib/mongodb').sanitizeCollation;
 
 var GeoPoint = require('loopback-datasource-juggler').GeoPoint;
 
@@ -3351,6 +3352,32 @@ describe('mongodb connector', function() {
       const input = {key: 'value', random$key: 'a value', mapReduce: 'map'};
       const out = sanitizeFilter(input);
       out.should.deepEqual({key: 'value', random$key: 'a value'});
+    });
+  });
+
+  context('sanitizeCollation()', () => {
+    it('returns undefined if not an object', () => {
+      const input = false;
+      const out = sanitizeCollation(input);
+      should(out).equal(undefined);
+    });
+
+    it('returns the collation if options.disableSanitization is true', () => {
+      const input = {key: 'value', $where: 'a value'};
+      const out = sanitizeCollation(input, {disableSanitization: true});
+      out.should.deepEqual(input);
+    });
+
+    it('removes `$where` property', () => {
+      const input = {$where: 'a value', locale: 'en', strength: 1};
+      const out = sanitizeCollation(input);
+      out.should.deepEqual({locale: 'en', strength: 1});
+    });
+
+    it('removes properties with wrong type in it', () => {
+      const input = {locale: 'en', strength: '1.0', backwards: 'false'};
+      const out = sanitizeCollation(input);
+      out.should.deepEqual({locale: 'en'});
     });
   });
 

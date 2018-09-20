@@ -1,3 +1,27 @@
+2018-09-19, Version 3.8.0
+=========================
+
+ * fix performance issues on count #464 (Clément)
+
+ * feat: allow methods to pass strictObjectIDCoercion (virkt25)
+
+
+2018-09-14, Version 3.7.1
+=========================
+
+ * fix: map new names to old for connector hooks (virkt25)
+
+
+2018-09-12, Version 3.7.0
+=========================
+
+ * update deprecated mongo driver commands (Hugo Da Roit)
+
+ * Remove hard dependency of memwatch-next (Raymond Feng)
+
+ * Add support for protocol to be 'monogodb+srv' (Raymond Feng)
+
+
 2018-08-15, Version 3.6.0
 =========================
 

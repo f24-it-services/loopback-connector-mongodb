@@ -74,7 +74,7 @@ describe('lazyConnect', function() {
 
     ds.connector.execute(
       'TestLazy',
-      'insert',
+      'insertOne',
       {value: 'test value'},
       function(err, success) {
         if (err) {
@@ -101,11 +101,11 @@ describe('lazyConnect', function() {
 
     ds.connector.execute(
       'TestLazy',
-      'insert',
+      'insertOne',
       {value: 'test value'},
       function(err, success) {
         if (err) done(err);
-        var id = success.insertedIds[0];
+        var id = success.insertedId;
         ds.connector.should.have.property('db');
         ds.connector.db.should.have.property('topology');
         ds.connector.db.topology.should.have.property('isDestroyed');
@@ -2852,6 +2852,22 @@ describe('mongodb connector', function() {
       Post.find({where: {title: {neq: 'My Post'}}}, function(err, posts) {
         should.not.exist(err);
         posts.should.have.property('length', 0);
+        done();
+      });
+    });
+  });
+
+  it('should support count without where', function(done) {
+    const POST_NUMBER = 35;
+    const posts = [];
+    for (let i = 0; i < POST_NUMBER; i++) {
+      posts.push({title: `My post ${i}`, content: `content ${i}`});
+    }
+
+    Post.create(posts, function() {
+      Post.count(function(err, count) {
+        if (err) return done(err);
+        count.should.be.equal(POST_NUMBER);
         done();
       });
     });

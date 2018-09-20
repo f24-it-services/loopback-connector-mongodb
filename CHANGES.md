@@ -1,3 +1,17 @@
+2018-09-19, Version 3.8.0
+=========================
+
+ * fix performance issues on count #464 (Clément)
+
+ * feat: allow methods to pass strictObjectIDCoercion (virkt25)
+
+
+2018-09-14, Version 3.7.1
+=========================
+
+ * fix: map new names to old for connector hooks (virkt25)
+
+
 2018-09-12, Version 3.7.0
 =========================
 

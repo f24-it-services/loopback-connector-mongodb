@@ -29,7 +29,8 @@ var Superhero,
   UserWithRenamedColumns,
   PostWithStringIdAndRenamedColumns,
   Employee,
-  PostWithDisableDefaultSort;
+  PostWithDisableDefaultSort,
+  WithEmbeddedBinaryProperties;
 
 describe('lazyConnect', function() {
   it('should skip connect phase (lazyConnect = true)', function(done) {
@@ -292,6 +293,19 @@ describe('mongodb connector', function() {
       },
       {
         disableDefaultSort: true,
+      }
+    );
+
+    WithEmbeddedBinaryProperties = db.define(
+      'WithEmbeddedBinaryProperties',
+      {
+        name: {type: String},
+        image: {
+          type: {
+            label: String,
+            rawImg: Buffer,
+          },
+        },
       }
     );
 
@@ -668,6 +682,19 @@ describe('mongodb connector', function() {
     });
   });
 
+  it('should convert embedded model binary properties to buffer correctly', function(done) {
+    const entity = {
+      name: 'Rigas',
+      image: {label: 'paris 2016', rawImg: Buffer.from([255, 216, 255, 224])},
+    };
+    WithEmbeddedBinaryProperties.create(entity, function(e, r) {
+      WithEmbeddedBinaryProperties.findById(r.id, function(e, post) {
+        post.image.rawImg.should.be.eql(Buffer.from([255, 216, 255, 224]));
+        done();
+      });
+    });
+  });
+
   it('hasMany should support additional conditions', function(done) {
     User.create(function(e, u) {
       u.posts.create({}, function(e, p) {
@@ -777,12 +804,14 @@ describe('mongodb connector', function() {
   });
 
   it('does not execute a nested `$where`', function(done) {
+    const filter = {where: {content: {$where: 'function() {return this.content.contains("content")}'}}};
+
     Post.create({title: 'Post1', content: 'Post1 content'}, (err, p1) => {
       Post.create({title: 'Post2', content: 'Post2 content'}, (err2, p2) => {
         Post.create({title: 'Post3', content: 'Post3 data'}, (err3, p3) => {
-          Post.find({where: {content: {$where: 'function() {return this.content.contains("content")}'}}}, (err, p) => {
-            should.not.exist(err);
-            p.length.should.be.equal(0);
+          Post.find(filter, {allowExtendedOperators: true}, (err, p) => {
+            should.exist(err);
+            err.message.should.match(/^\$where/);
             done();
           });
         });
@@ -1181,7 +1210,7 @@ describe('mongodb connector', function() {
               err.name.should.equal('MongoError');
               err.errmsg.should.equal(
                 'The dollar ($) prefixed ' +
-                  "field '$rename' in '$rename' is not valid for storage."
+                "field '$rename' in '$rename' is not valid for storage."
               );
               done();
             }
@@ -1206,7 +1235,7 @@ describe('mongodb connector', function() {
               err.name.should.equal('MongoError');
               err.errmsg.should.equal(
                 'The dollar ($) prefixed ' +
-                  "field '$rename' in '$rename' is not valid for storage."
+                "field '$rename' in '$rename' is not valid for storage."
               );
               done();
             }
@@ -1263,7 +1292,7 @@ describe('mongodb connector', function() {
               err.name.should.equal('MongoError');
               err.errmsg.should.equal(
                 'The dollar ($) prefixed ' +
-                  "field '$rename' in '$rename' is not valid for storage."
+                "field '$rename' in '$rename' is not valid for storage."
               );
               done();
             }
@@ -1430,6 +1459,68 @@ describe('mongodb connector', function() {
         });
       });
     });
+  });
+
+  it('findOrCreate should properly support field projection (on create) - object', function() {
+    const query = {where: {title: 'Kopria post'}, fields: {comments: 1}};
+    const newData = {title: 'Kopria post', content: 'Xazo content', comments: ['comment1', 'comment2']};
+    return Post.findOrCreate(query, newData)
+      .then(function(result) {
+        const createdPost = result[0];
+        const created = result[1];
+        created.should.be.true();
+        should.not.exist(createdPost.title);
+        should.not.exist(createdPost.content);
+        createdPost.comments.should.containDeep(['comment1', 'comment2']);
+      });
+  });
+
+  it('findOrCreate should properly support field projection (on create) - array', function() {
+    const query = {where: {title: 'Kopria post'}, fields: ['comments']};
+    const newData = {title: 'Kopria post', content: 'Xazo content', comments: ['comment1', 'comment2']};
+    return Post.findOrCreate(query, newData)
+      .then(function(result) {
+        const createdPost = result[0];
+        const created = result[1];
+        created.should.be.true();
+        should.not.exist(createdPost.title);
+        should.not.exist(createdPost.content);
+        createdPost.comments.should.containDeep(['comment1', 'comment2']);
+      });
+  });
+
+  it('findOrCreate should properly support field projection (on find) - object', function() {
+    const query = {where: {title: 'Kopria post'}, fields: {comments: 1}};
+    const postData = {title: 'Kopria post', content: 'Xazo content', comments: ['comment1', 'comment2']};
+    return Post.create(postData)
+      .then(function() { // post created
+        return Post.findOrCreate(query, postData);
+      })
+      .then(function(result) {
+        const foundPost = result[0];
+        const created = result[1];
+        created.should.be.false();
+        should.not.exist(foundPost.title);
+        should.not.exist(foundPost.content);
+        foundPost.comments.should.containDeep(['comment1', 'comment2']);
+      });
+  });
+
+  it('findOrCreate should properly support field projection (on find) - array', function() {
+    const query = {where: {title: 'Kopria post'}, fields: ['comments']};
+    const postData = {title: 'Kopria post', content: 'Xazo content', comments: ['comment1', 'comment2']};
+    return Post.create(postData)
+      .then(function() { // post created
+        return Post.findOrCreate(query, postData);
+      })
+      .then(function(result) {
+        const foundPost = result[0];
+        const created = result[1];
+        created.should.be.false();
+        should.not.exist(foundPost.title);
+        should.not.exist(foundPost.content);
+        foundPost.comments.should.containDeep(['comment1', 'comment2']);
+      });
   });
 
   it('updateOrCreate should update the instance', function(done) {
@@ -2917,7 +3008,7 @@ describe('mongodb connector', function() {
 
   it(
     'should support where for count (using renamed columns in deep filter ' +
-      'criteria)',
+    'criteria)',
     function(done) {
       PostWithStringId.create({title: 'My Post', content: 'Hello'}, function(
         err,
@@ -2979,6 +3070,25 @@ describe('mongodb connector', function() {
   it('should export the generateMongoDBURL function', function() {
     var module = require('../');
     module.generateMongoDBURL.should.be.an.instanceOf(Function);
+  });
+
+  context('fieldsArrayToObj', function() {
+    var fieldsArrayToObj = require('../').fieldsArrayToObj;
+    it('should export the fieldsArrayToObj function', function() {
+      fieldsArrayToObj.should.be.an.instanceOf(Function);
+    });
+
+    it('should return actual object if provided input is not an array', function() {
+      fieldsArrayToObj({someField: 1}).should.be.eql({someField: 1});
+    });
+
+    it('should provide the single _id element when input array empty', function() {
+      fieldsArrayToObj([]).should.be.eql({_id: 1});
+    });
+
+    it('should properly convert the provided array to object', function() {
+      fieldsArrayToObj(['prop1', 'prop2']).should.be.eql({prop1: 1, prop2: 1});
+    });
   });
 
   context('regexp operator', function() {

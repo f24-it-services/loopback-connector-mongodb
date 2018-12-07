@@ -1,3 +1,27 @@
+2018-11-08, Version 3.9.2
+=========================
+
+ * support decimal128 type for nested properties  (#483) (Janny)
+
+
+2018-10-24, Version 3.9.1
+=========================
+
+ * remove the infinite inspect (#480) (#482) (Janny)
+
+
+2018-10-23, Version 3.9.0
+=========================
+
+ * support decimal128 (#475) (Janny)
+
+ * Added `"authSource"` in doc connection properties (Rémi AUGUSTE)
+
+ * Convert embedded binary properties to buffer (ntsekouras)
+
+ * Convert projection fields option to object (Dimitris)
+
+
 2018-09-19, Version 3.8.0
 =========================
 
